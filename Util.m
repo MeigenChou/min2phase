@@ -1,10 +1,10 @@
-//Shuang Chen
+//
 //  Util.m
 //  DCTimer Scramblers
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -16,9 +16,9 @@
 
 #import "Util.h"
 #import "CubieCube.h"
-#import "Im.h"
 
 @implementation Util
+
 //Colors
 const int U = 0;
 const int R = 1;
@@ -110,9 +110,11 @@ int edgeFacelet[12][2] = { { U6, R2 }, { U8, F2 }, { U4, L2 }, { U2, B2 }, { D6,
 bool ckmv2[11][10];
 int std2ud[18];
 int ud2std[] = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2};
+int Cnk[12][12];
+int fact[13];
 int permMult[24][24];
 
-void toCubieCube(int f[], CubieCube *ccRet) {
++(void) toCubieCube:(int [])f cc:(CubieCube *)ccRet {
     int ori;
     for (int i = 0; i < 8; i++)
         ccRet->cp[i] = 0;// invalidate corners
@@ -154,7 +156,7 @@ void toCubieCube(int f[], CubieCube *ccRet) {
     }
 }
 
-NSString *toFaceCube(CubieCube *cc) {
++(NSString *)toFaceCube:(CubieCube *)cc {
     char f[54];
     char ts[] = {'U', 'R', 'F', 'D', 'L', 'B'};
     for (int i=0; i<54; i++) {
@@ -179,7 +181,32 @@ NSString *toFaceCube(CubieCube *cc) {
     return facelets;
 }
 
-int binarySearch(unsigned short arr[], int length, int key) {
++(void)set8Perm:(int[])arr i:(int)idx {
+    int val = 0x76543210;
+    for (int i=0; i<7; i++) {
+        int p = fact[7-i];
+        int v = idx / p;
+        idx -= v*p;
+        v <<= 2;
+        arr[i] = (val >> v) & 07;
+        int m = (1 << v) - 1;
+        val = (val & m) + ((val >> 4) & ~m);
+    }
+    arr[7] = val;
+}
+
++(int)get8Perm:(int[])arr {
+    int idx = 0;
+    int val = 0x76543210;
+    for (int i=0; i<7; i++) {
+        int v = arr[i] << 2;
+        idx = (8 - i) * idx + ((val >> v) & 07);
+        val -= 0x11111110 << v;
+    }
+    return idx;
+}
+
++(int) binarySearch:(unsigned short [])arr l:(int)length k:(int)key {
     if (key <= arr[length-1]) {
         int l = 0;
         int r = length-1;
@@ -198,7 +225,7 @@ int binarySearch(unsigned short arr[], int length, int key) {
     return 0xffff;
 }
 
-int getNParity(int idx, int n) {
++(int) getNParity:(int)idx n:(int)n {
     int p = 0;
     for (int i=n-2; i>=0; i--) {
         p ^= idx % (n-i);
@@ -207,19 +234,7 @@ int getNParity(int idx, int n) {
     return p & 1;
 }
 
-void setNPerm(int arr[], int idx, int n) {
-    arr[n-1] = 0;
-    for (int i=n-2; i>=0; i--) {
-        arr[i] = (int) (idx % (n-i));
-        idx /= (n-i);
-        for (int j=i+1; j<n; j++) {
-            if (arr[j] >= arr[i])
-                arr[j]++;
-        }
-    }
-}
-
-int getNPerm(int arr[], int n) {
++(int) getNPerm:(int [])arr n:(int)n {
     int idx=0;
     for (int i=0; i<n; i++) {
         idx *= (n-i);
@@ -232,7 +247,54 @@ int getNPerm(int arr[], int n) {
     return idx;
 }
 
-void setupUtil() {
++(void) setNPerm:(int [])arr i:(int)idx n:(int)n {
+    arr[n-1] = 0;
+    for (int i=n-2; i>=0; i--) {
+        arr[i] = idx % (n-i);
+        idx /= (n-i);
+        for (int j=i+1; j<n; j++) {
+            if (arr[j] >= arr[i])
+                arr[j]++;
+        }
+    }
+}
+
++(int) getComb:(int [])arr m:(int)mask {
+    int idxC = 0, idxP = 0, r = 4, val = 0x123;
+    for (int i=11; i>=0; i--) {
+        if ((arr[i] & 0xc) == mask) {
+            int v = (arr[i] & 3) << 2;
+            idxP = r * idxP + ((val >> v) & 0x0f);
+            val -= 0x0111 >> (12-v);
+            idxC += Cnk[i][r--];
+        }
+    }
+    return idxP << 9 | (494 - idxC);
+}
+
++(void) setComb:(int [])arr i:(int)idx m:(int)mask {
+    int r = 4, fill = 11, val = 0x123;
+    int idxC = 494 - (idx & 0x1ff);
+    int idxP = idx >> 9;
+    for (int i=11; i>=0; i--) {
+        if (idxC >= Cnk[i][r]) {
+            idxC -= Cnk[i][r--];
+            int p = fact[r & 3];
+            int v = idxP / p << 2;
+            idxP %= p;
+            arr[i] = ((val >> v) & 3) | mask;
+            int m = (1 << v) - 1;
+            val = (val & m) + ((val >> 4) & ~m);
+        } else {
+            if ((fill & 0xc) == mask) {
+                fill -= 4;
+            }
+            arr[i] = fill--;
+        }
+    }
+}
+
++(void) setupUtil {
     for (int i=0; i<10; i++) {
         std2ud[ud2std[i]] = i;
     }
@@ -244,18 +306,25 @@ void setupUtil() {
         }
         ckmv2[10][i] = false;
     }
-    initIm();
+    fact[0] = 1;
+    for (int i=0; i<12; i++) {
+        Cnk[i][0] = Cnk[i][i] = 1;
+        fact[i+1] = fact[i] * (i+1);
+        for (int j=1; j<i; j++) {
+            Cnk[i][j] = Cnk[i-1][j-1] + Cnk[i-1][j];
+        }
+    }
     int arr1[4];
     int arr2[4];
     int arr3[4];
     for (int i=0; i<24; i++) {
         for (int j=0; j<24; j++) {
-            setNPerm(arr1, i, 4);
-            setNPerm(arr2, j, 4);
+            [self setNPerm:arr1 i:i n:4];
+            [self setNPerm:arr2 i:j n:4];
             for (int k=0; k<4; k++) {
                 arr3[k] = arr1[arr2[k]];
             }
-            permMult[i][j] = getNPerm(arr3, 4);
+            permMult[i][j] = [self getNPerm:arr3 n:4];
         }
     }
 }

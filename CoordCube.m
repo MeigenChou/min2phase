@@ -4,7 +4,7 @@
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -45,6 +45,7 @@ extern unsigned short SymStateTwist[324];
 extern unsigned short SymStateFlip[336];
 extern unsigned short SymStatePerm[2768];
 extern int e2c[];
+
 //XMove = Move Table
 //XPrun = Pruning Table
 //XConj = Conjugate Table
@@ -66,26 +67,26 @@ unsigned short MPermConj[N_MPERM][16];
 int MCPermPrun[N_MPERM * N_PERM_SYM / 8];
 int MEPermPrun[N_MPERM * N_PERM_SYM / 8];
 
-void setPruning(int table[], int index, int value) {
++(void) setPruning:(int[])table i:(int)index v:(int)value {
     table[index >> 3] ^= (0x0f ^ value) << ((index & 7) << 2);
 }
 
-int getPruning(int table[], int index) {
++(int) getPruning:(int[])table i:(int)index {
     return (table[index >> 3] >> ((index & 7) << 2)) & 0x0f;
 }
 
-void initUDSliceMoveConj(){
++(void) initUDSliceMoveConj {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_SLICE; i++) {
-        c.UDSlice = i;
+        [c setUDSlice:i];
         for (int j=0; j<N_MOVES; j+=3) {
             [CubieCube EdgeMult:c cubeB:[[CubieCube moveCube] objectAtIndex:j] cubeProd:d];
-            UDSliceMove[i][j] = d.UDSlice;
+            UDSliceMove[i][j] = [d getUDSlice];
         }
         for (int j=0; j<16; j+=2) {
             [CubieCube EdgeConjugate:c idx:SymInv[j] cubeB:d];
-            UDSliceConj[i][(j >> 1)] = d.UDSlice & 0x1ff;
+            UDSliceConj[i][(j >> 1)] = [d getUDSlice] & 0x1ff;
         }
     }
     for (int i=0; i<N_SLICE; i++) {
@@ -100,86 +101,86 @@ void initUDSliceMoveConj(){
     }
 }
 
-void initFlipMove() {
++(void) initFlipMove {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_FLIP_SYM; i++) {
-        c.flip = FlipS2R[i];
+        [c setFlip:FlipS2R[i]];
         for (int j=0; j<N_MOVES; j++) {
             [CubieCube EdgeMult:c cubeB:[[CubieCube moveCube] objectAtIndex:j] cubeProd:d];
-            FlipMove[i][j] = d.flipSym;
+            FlipMove[i][j] = [d getFlipSym];
         }
     }
 }
 
-void initTwistMove() {
++(void) initTwistMove {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_TWIST_SYM; i++) {
-        c.twist = TwistS2R[i];
+        [c setTwist:TwistS2R[i]];
         for (int j=0; j<N_MOVES; j++) {
             [CubieCube CornMult:c cubeB:[[CubieCube moveCube] objectAtIndex:j] cubeProd:d];
-            TwistMove[i][j] = d.twistSym;
+            TwistMove[i][j] = [d getTwistSym];
         }
     }
 }
 
-void initCPermMove() {
++(void) initCPermMove {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_PERM_SYM; i++) {
-        c.CPerm = EPermS2R[i];
+        [c setCPerm:EPermS2R[i]];
         for (int j=0; j<N_MOVES; j++) {
             [CubieCube CornMult:c cubeB:[[CubieCube moveCube] objectAtIndex:j] cubeProd:d];
-            CPermMove[i][j] = d.CPermSym;
+            CPermMove[i][j] = [d getCPermSym];
         }
     }
 }
 
-void initEPermMove() {
++(void) initEPermMove {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_PERM_SYM; i++) {
-        c.EPerm = EPermS2R[i];
+        [c setEPerm: EPermS2R[i]];
         for (int j=0; j<N_MOVES2; j++) {
             [CubieCube EdgeMult:c cubeB:[[CubieCube moveCube] objectAtIndex:ud2std[j]] cubeProd:d];
-            EPermMove[i][j] = d.EPermSym;
+            EPermMove[i][j] = [d getEPermSym];
         }
     }
 }
 
-void initMPermMoveConj() {
++(void) initMPermMoveConj {
     CubieCube *c = [[CubieCube alloc] init];
     CubieCube *d = [[CubieCube alloc] init];
     for (int i=0; i<N_MPERM; i++) {
-        c.MPerm = i;
+        [c setMPerm:i];
         for (int j=0; j<N_MOVES2; j++) {
             [CubieCube EdgeMult:c cubeB:[[CubieCube moveCube] objectAtIndex:ud2std[j]] cubeProd:d];
-            MPermMove[i][j] = d.MPerm;
+            MPermMove[i][j] = [d getMPerm];
         }
         for (int j=0; j<16; j++) {
             [CubieCube EdgeConjugate:c idx:SymInv[j] cubeB:d];
-            MPermConj[i][j] = d.MPerm;
+            MPermConj[i][j] = [d getMPerm];
         }
     }
 }
 
-void initRawSymPrun(int PrunTable[],  int INV_DEPTH,
-                    unsigned short* RawMove,  unsigned short* RawConj,
-                    unsigned short *SymMove,  unsigned short* SymState,
-                    int* SymSwitch,  int* moveMap,  int SYM_SHIFT,
-                    int N_RAW, int N_SYM, int N_MOVES, int N_SYMMOVES, int RawConjSize) {
-    
++(void) initRawSymPrun:(int[])PrunTable id:(int)INV_DEPTH
+                    rm:(unsigned short*)RawMove rc:(unsigned short*)RawConj
+                    sm:(unsigned short *)SymMove ss:(unsigned short*)SymState
+                   ssw:(int*)SymSwitch mm:(int*)moveMap ssh:(int)SYM_SHIFT
+                    nr:(int)N_RAW ns:(int)N_SYM nm:(int) N_MOVES nsy:(int)N_SYMMOVES rcs:(int)RawConjSize {
     int SYM_MASK = (1 << SYM_SHIFT) - 1;
     int N_SIZE = N_RAW * N_SYM;
     
     for (int i=0; i<(N_RAW*N_SYM+7)/8; i++) {
         PrunTable[i] = -1;
     }
-    setPruning(PrunTable, 0, 0);
+    [CoordCube setPruning:PrunTable i:0 v:0];
     
     int depth = 0;
     int done = 1;
+    
     while (done < N_SIZE) {
         BOOL inv = depth > INV_DEPTH;
         int select = inv ? 0x0f : depth;
@@ -202,19 +203,18 @@ void initRawSymPrun(int PrunTable[],  int INV_DEPTH,
                         int rawx = RawConj[rawIndex1 * RawConjSize + (symx & SYM_MASK)];
                         symx >>= (unsigned)SYM_SHIFT;
                         int idx = symx * N_RAW + rawx;
-                        if (getPruning(PrunTable, idx) == check) {
+                        if ([CoordCube getPruning:PrunTable i:idx] == check) {
                             done++;
-                            
                             if (inv) {
-                                setPruning(PrunTable, i, depth);
+                                [CoordCube setPruning:PrunTable i:i v:depth];
                                 break;
                             } else {
-                                setPruning(PrunTable, idx, depth);
+                                [CoordCube setPruning:PrunTable i:idx v:depth];
                                 for (int j=1, symState = SymState[symx]; (symState >>= 1) != 0; j++) {
                                     if ((symState & 1) == 1) {
                                         int idxx = symx * N_RAW + RawConj[rawx * RawConjSize + (j ^ (SymSwitch == NULL ? 0 : SymSwitch[j]))]; //Null?
-                                        if (getPruning(PrunTable, idxx) == 0x0f) {
-                                            setPruning(PrunTable, idxx, depth);
+                                        if ([CoordCube getPruning:PrunTable i:idxx] == 0x0f) {
+                                            [CoordCube setPruning:PrunTable i:idxx v:depth];
                                             done++;
                                         }
                                     }
@@ -227,34 +227,33 @@ void initRawSymPrun(int PrunTable[],  int INV_DEPTH,
         }
         //NSLog(@"%2d%8d", depth, done);
     }
-	
 }
 
-void initSliceTwistPrun() {
-    initRawSymPrun(UDSliceTwistPrun, 6, (unsigned short*)UDSliceMove, (unsigned short*)UDSliceConj, (unsigned short*)TwistMove, (unsigned short*)SymStateTwist, NULL, NULL, 3, 495, 324, 18, 18, 8);
++(void) initSliceTwistPrun {
+    [CoordCube initRawSymPrun:UDSliceTwistPrun id:6
+                           rm:(unsigned short*)UDSliceMove rc:(unsigned short*)UDSliceConj
+                           sm:(unsigned short*)TwistMove ss:(unsigned short*)SymStateTwist
+                          ssw:NULL mm:NULL ssh:3 nr:495 ns:324 nm:18 nsy:18 rcs:8];
 }
 
-void initSliceFlipPrun() {
-    initRawSymPrun(UDSliceFlipPrun, 6,
-                   (unsigned short*)UDSliceMove, (unsigned short*)UDSliceConj,
-                   (unsigned short*)FlipMove, (unsigned short*)SymStateFlip,
-                   NULL, NULL, 3, 495, 336, 18, 18, 8
-                   );
++(void) initSliceFlipPrun {
+    [CoordCube initRawSymPrun:UDSliceFlipPrun id:6
+                           rm:(unsigned short*)UDSliceMove rc:(unsigned short*)UDSliceConj
+                           sm:(unsigned short*)FlipMove ss:(unsigned short*)SymStateFlip
+                          ssw:NULL mm:NULL ssh:3 nr:495 ns:336 nm:18 nsy:18 rcs:8];
 }
 
-void initMEPermPrun() {
-    initRawSymPrun(MEPermPrun, 7,
-                   (unsigned short*)MPermMove, (unsigned short*)MPermConj,
-                   (unsigned short*)EPermMove, (unsigned short*)SymStatePerm,
-                   NULL, NULL, 4, 24, 2768, 10, 10, 16
-                   );
++(void) initMEPermPrun {
+    [CoordCube initRawSymPrun:MEPermPrun id:7
+                           rm:(unsigned short*)MPermMove rc:(unsigned short*)MPermConj
+                           sm:(unsigned short*)EPermMove ss:(unsigned short*)SymStatePerm
+                          ssw:NULL mm:NULL ssh:4 nr:24 ns:2768 nm:10 nsy:10 rcs:16];
 }
 
-void initMCPermPrun() {
-    initRawSymPrun(MCPermPrun, 10,
-                   (unsigned short*)MPermMove, (unsigned short*)MPermConj,
-                   (unsigned short*)CPermMove, (unsigned short*)SymStatePerm,
-                   e2c, ud2std, 4, 24, 2768, 10, 18, 16
-                   );
++(void) initMCPermPrun {
+    [CoordCube initRawSymPrun:MCPermPrun id:10
+                           rm:(unsigned short*)MPermMove rc:(unsigned short*)MPermConj
+                           sm:(unsigned short*)CPermMove ss:(unsigned short*)SymStatePerm
+                          ssw:e2c mm:ud2std ssh:4 nr:24 ns:2768 nm:10 nsy:18 rcs:16];
 }
 @end

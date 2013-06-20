@@ -57,7 +57,7 @@ int STATE_SOLVED[] = {-3};
     return cnt;
 }
 
-- (int) resolvePerm:(int[]) arr len:(int)len cntU:(int)cntU parity:(int)parity {
+-(int) resolvePerm:(int[]) arr len:(int)len cntU:(int)cntU parity:(int)parity {
     if (arr[0] == -3) {
         return 0;
     } else if (arr[0] == -2) {
@@ -87,7 +87,8 @@ int STATE_SOLVED[] = {-3};
             arr[idx] = val[--cntU];
         }
     }
-    int p = getNParity(getNPerm(arr, len), len);
+    int perm = [Util getNPerm:arr n:len];
+    int p = [Util getNParity:perm n:len];
     if (p == 1-parity && last != -1) {
         int temp = arr[idx-1];
         arr[idx-1] = arr[last];
@@ -106,39 +107,39 @@ int STATE_SOLVED[] = {-3};
             epVal = parity = 0;
         } else {
             parity = [self resolvePerm:ep len:12 cntU:cntUE parity:-1];
-            epVal = getNPerm(ep, 12);
+            epVal = [Util getNPerm:ep n:12];
         }
         if (cp[0] == -3) {
             cpVal = 0;
         } else if (cp[0] == -2) {
             do {
                 cpVal = rand()%40320;
-            } while (getNParity(cpVal, 8) != parity);
+            } while ([Util getNParity:cpVal n:8] != parity);
         } else {
             [self resolvePerm:cp len:8 cntU:cntUC parity:parity];
-            cpVal = getNPerm(cp, 8);
+            cpVal = [Util getNPerm:cp n:8];
         }
     } else {	//ep != STATE_SOLVED
         if (cp[0] == -3) {
             cpVal = parity = 0;
         } else if (cp[0] == -2) {
             cpVal = rand()%40320;
-            parity = getNParity(cpVal, 8);
+            parity = [Util getNParity:cpVal n:8];
         } else {
             parity = [self resolvePerm:cp len:8 cntU:cntUC parity:-1];
-            cpVal = getNPerm(cp, 8);
+            cpVal = [Util getNPerm:cp n:8];
         }
         if (ep[0] == -2) {
             do {
                 epVal = rand()%479001600;
-            } while (getNParity(epVal, 12) != parity);
+            } while ([Util getNParity:epVal n:12] != parity);
         } else {
             [self resolvePerm:ep len:12 cntU:cntUE parity:parity];
-            epVal = getNPerm(ep, 12);
+            epVal = [Util getNPerm:ep n:12];
         }
     }
     CubieCube *c = [[CubieCube allocWithZone:NULL] initCubie:cpVal twist:co[0] == -2 ? rand()%2187 : (co[0] == -3 ? 0 : [self resolveOri:co len:8 base:3]) eperm:epVal flip:eo[0] == -2 ? rand()%2048 : (eo[0] == -3 ? 0 : [self resolveOri:eo len:12 base:2])];
-    return toFaceCube(c);
+    return [Util toFaceCube:c];
 }
 
 - (NSString *)randomCube {
@@ -251,28 +252,25 @@ int STATE_SOLVED[] = {-3};
 
 -(NSString*)scramble: (int) type {
     static BOOL firstRun = YES;
-    //NSMutableString *sol = [NSMutableString string];
+    NSMutableString *sol = [NSMutableString string];
     if (firstRun) {
-        NSLog(@"init Cubie");
-        setupUtil();
+        [Util setupUtil];
         [CubieCube initMove];
         [CubieCube initSym];
         [CubieCube initFlipSym2Raw];
         [CubieCube initTwistSym2Raw];
         [CubieCube initPermSym2Raw];
-        NSLog(@"init Coord");
-        initFlipMove();
-        initTwistMove();
-        initUDSliceMoveConj();
-        initCPermMove();
-        initEPermMove();
-        initMPermMoveConj();
-        initSliceTwistPrun();
-        initSliceFlipPrun();
-        initMEPermPrun();
-        initMCPermPrun();
+        [CoordCube initFlipMove];
+        [CoordCube initTwistMove];
+        [CoordCube initUDSliceMoveConj];
+        [CoordCube initCPermMove];
+        [CoordCube initEPermMove];
+        [CoordCube initMPermMoveConj];
+        [CoordCube initSliceTwistPrun];
+        [CoordCube initSliceFlipPrun];
+        [CoordCube initMEPermPrun];
+        [CoordCube initMCPermPrun];
         firstRun = NO;
-        NSLog(@"OK");
     }
     NSString *cube;
     NSArray *sufx = [[NSArray alloc] initWithObjects:@"", @"x'", @"x2", @"x", nil];
@@ -306,9 +304,10 @@ int STATE_SOLVED[] = {-3};
             cube = @"";
     }
     NSLog(@"%@", cube);
-    NSString *sol = solutionForFacelets(cube, 21, 5000, 100, 2);
-    if([sol hasPrefix:@"Error"]) sol = solutionForFacelets(cube, 21, 10000, 0, 2);
-    if(type>9) sol = [sol stringByAppendingString:[sufx objectAtIndex:sw]];
+    Search *s = [[Search alloc] init];
+    [sol appendFormat:@"%@", [s solutionForFacelets:cube md:21 nt:5000 tm:100 v:2]];
+    //NSString *sol = [s solutionForFacelets:cube md:21 nt:5000 tm:100 v:2];
+    if(type>9) [sol appendFormat:@"%@", [sufx objectAtIndex:sw]];//sol = [sol stringByAppendingString:[sufx objectAtIndex:sw]];
     //NSLog(@"%@", sol);
     return sol;
 }

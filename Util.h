@@ -4,7 +4,7 @@
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -18,13 +18,15 @@
 #import "CubieCube.h"
 
 @interface Util : NSObject
-void toCubieCube(int f[], CubieCube *ccRet);
-NSString *toFaceCube(CubieCube *cc);
-int binarySearch(unsigned short arr[], int length, int key);
-int getNParity(int idx, int n);
-void setNPerm(int arr[], int idx, int n);
-int getNPerm(int arr[], int n);
-int getComb(int arr[], int mask);
-void setComb(int arr[], int idx, int mask);
-void setupUtil();
++(void)toCubieCube:(int[])f cc:(CubieCube *)ccRet;
++(NSString *)toFaceCube:(CubieCube *)cc;
++(void)set8Perm:(int[])arr i:(int)idx;
++(int)get8Perm:(int[])arr;
++(int) binarySearch:(unsigned short[])arr l:(int)length k:(int)key;
++(int) getNParity:(int)idx n:(int)n;
++(int) getNPerm:(int[])arr n:(int)n;
++(void) setNPerm:(int[])arr i:(int)idx n:(int)n;
++(int) getComb:(int[])arr m:(int)mask;
++(void) setComb:(int[])arr i:(int)idx m:(int)mask;
++(void) setupUtil;
 @end

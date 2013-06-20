@@ -10,11 +10,10 @@
 - CubieCube.m  CubieCube, see kociemba's [page](http://kociemba.org/math/cubielevel.htm).
 - CoordCube.m  Only for generating tables.
 - Search.m  Search program.
-- Im.m  Some functions which can be used in other solvers.
 
 # License GPLv3
 
-    Copyright (C) 2012  Shuang Chen
+    Copyright (C) 2013  Shuang Chen
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

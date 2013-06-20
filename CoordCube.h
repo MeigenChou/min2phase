@@ -4,7 +4,7 @@
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -17,23 +17,18 @@
 #import <Foundation/Foundation.h>
 
 @interface CoordCube : NSObject
-void setPruning(int table[], int index, int value);
-int getPruning(int table[], int index);
++(int) getPruning:(int[])table i:(int)index;
 
-void initUDSliceMoveConj();
-void initFlipMove();
-void initTwistMove();
-void initCPermMove();
-void initEPermMove();
-void initMPermMoveConj();
-void initTwistFlipPrun();
-void initRawSymPrun(int PrunTable[],  int INV_DEPTH,
-                    unsigned short* RawMove,  unsigned short* RawConj,
-                    unsigned short* SymMove,  unsigned short* SymState,
-                    int* SymSwitch,  int* moveMap,  int SYM_SHIFT,
-                    int N_RAW, int N_SYM, int N_MOVES, int N_SYMMOVES, int RawConjSize);
-void initSliceTwistPrun();
-void initSliceFlipPrun();
-void initMEPermPrun();
-void initMCPermPrun();
++(void) initFlipMove;
++(void) initTwistMove;
++(void) initUDSliceMoveConj;
+
++(void) initCPermMove;
++(void) initEPermMove;
++(void) initMPermMoveConj;
+
++(void) initSliceTwistPrun;
++(void) initSliceFlipPrun;
++(void) initMEPermPrun;
++(void) initMCPermPrun;
 @end

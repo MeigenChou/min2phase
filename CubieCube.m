@@ -4,7 +4,7 @@
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -16,10 +16,9 @@
 
 #import "CubieCube.h"
 #import "Util.h"
-#import "Im.h"
 
 @implementation CubieCube
-@dynamic UDSlice, flip, flipSym, twist, twistSym, CPerm, CPermSym, EPerm, EPermSym, MPerm, MPermSym, U4Comb, D4Comb;
+
 int SymInv[16];
 int SymMult[16][16];
 int SymMove[16][18];
@@ -34,12 +33,6 @@ int Sym8MultInv[8][8];
 unsigned short FlipS2R[336];
 unsigned short TwistS2R[324];
 unsigned short EPermS2R[2768];
-
-extern int permMult[24][24];
-extern int SymMoveUD[16][10];
-unsigned short SymStateTwist[324];
-unsigned short SymStateFlip[336];
-unsigned short SymStatePerm[2768];
 
 /**
  * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -56,6 +49,13 @@ unsigned short MtoEPerm[40320];
 unsigned short FlipR2S[2048];
 unsigned short TwistR2S[2187];
 unsigned short EPermR2S[40320];
+
+/**
+ *
+ */
+unsigned short SymStateTwist[324];
+unsigned short SymStateFlip[336];
+unsigned short SymStatePerm[2768];
 
 extern int ud2std[];
 extern int std2ud[];
@@ -104,7 +104,7 @@ extern int std2ud[];
     return urf2;
 }
 
-CubieCube* temps = nil; //If you can do that, that is.
+CubieCube* temps = nil;
 
 -(id)init {
     return  [self initCubie:UINT32_MAX twist:UINT32_MAX eperm:UINT32_MAX flip:UINT32_MAX];
@@ -123,7 +123,7 @@ CubieCube* temps = nil; //If you can do that, that is.
         if (!(cperm == UINT32_MAX && UINT32_MAX == eperm && flip == UINT32_MAX)) {
             [self setCPerm:cperm];
             [self setTwist:twist];
-            setNPerm(ep, eperm, 12);
+            [Util setNPerm:ep i:eperm n:12];
             [self setFlip:flip];
         }
         
@@ -142,7 +142,7 @@ CubieCube* temps = nil; //If you can do that, that is.
     }
 }
 
--(void) invCubieCube { //Oh, dear. No idea what this does.
+-(void) invCubieCube {
     for (int edge=0; edge<12; edge++)
         temps->ep[ep[edge]] = edge;
     for (int edge=0; edge<12; edge++)
@@ -234,7 +234,7 @@ CubieCube* temps = nil; //If you can do that, that is.
 // Twist : Orientation of 8 Corners. Raw[0, 2187) Sym[0, 324 * 8)
 // UDSlice : Positions of the 4 UDSlice edges, the order is ignored. [0, 495)
 
--(int) flip {
+-(int) getFlip {
     int idx = 0;
     for (int i=0; i<11; i++) {
         idx <<= 1;
@@ -243,7 +243,7 @@ CubieCube* temps = nil; //If you can do that, that is.
     return idx;
 }
 
--(void)setFlip: (int)idx {
+-(void) setFlip: (int)idx {
     int parity = 0;
     for (int i=10; i>=0; i--) {
         parity ^= eo[i] = idx & 1;
@@ -252,11 +252,11 @@ CubieCube* temps = nil; //If you can do that, that is.
     eo[11] = parity;
 }
 
--(int) flipSym {
-    return FlipR2S[[self flip]];
+-(int) getFlipSym {
+    return FlipR2S[[self getFlip]];
 }
 
--(int) twist {
+-(int) getTwist {
     int idx = 0;
     for (int i=0; i<7; i++) {
         idx *= 3;
@@ -265,7 +265,7 @@ CubieCube* temps = nil; //If you can do that, that is.
     return idx;
 }
 
--(void) setTwist:(int) idx {
+-(void) setTwist:(int)idx {
     int twst = 0;
     for (int i=6; i>=0; i--) {
         twst += co[i] = idx % 3;
@@ -274,24 +274,24 @@ CubieCube* temps = nil; //If you can do that, that is.
     co[7] = (15 - twst) % 3;
 }
 
--(int) twistSym {
-    return TwistR2S[[self twist]];
+-(int) getTwistSym {
+    return TwistR2S[[self getTwist]];
 }
 
--(int)UDSlice {
-    return getComb(ep, 8);
+-(int) getUDSlice {
+    return [Util getComb:ep m:8];
 }
 
 -(void) setUDSlice:(int)idx {
-    setComb(ep, idx, 8);
+    [Util setComb:ep i:idx m:8];
 }
 
--(int) U4Comb {
-    return getComb(ep, 0);
+-(int) getU4Comb {
+    return [Util getComb:ep m:0];
 }
 
--(int) D4Comb {
-    return getComb(ep, 4);
+-(int) getD4Comb {
+    return [Util getComb:ep m:4];
 }
 
 // ++++++++++++++++++++ Phase 2 Coordnates ++++++++++++++++++++
@@ -299,38 +299,38 @@ CubieCube* temps = nil; //If you can do that, that is.
 // Cperm : Permutations of 8 Corners. Raw[0, 40320) Sym[0, 2187 * 16)
 // MPerm : Permutations of 4 UDSlice Edges. [0, 24)
 
--(int) CPerm {
-    return get8Perm(cp);
+-(int) getCPerm {
+    return [Util get8Perm:cp];
 }
 
 -(void) setCPerm:(int) idx {
-    set8Perm(self->cp, idx);
+    [Util set8Perm:cp i:idx];
 }
 
--(int) CPermSym {
-    int idx = EPermR2S[[self CPerm]];
+-(int) getCPermSym {
+    int idx = EPermR2S[[self getCPerm]];
     idx ^= e2c[idx&0x0f];
     return idx;
 }
 
--(int) EPerm {
-    return get8Perm(ep);
+-(int) getEPerm {
+    return [Util get8Perm:ep];
 }
 
 -(void) setEPerm:(int) idx {
-    set8Perm(ep, idx);
+    [Util set8Perm:ep i:idx];
 }
 
--(int) EPermSym {
-    return EPermR2S[[self EPerm]];
+-(int) getEPermSym {
+    return EPermR2S[[self getEPerm]];
 }
 
--(int)MPerm {
-    return getComb(ep, 8) >> 9;
+-(int) getMPerm {
+    return [Util getComb:ep m:8] >> 9;
 }
 
 -(void) setMPerm:(int) idx {
-    setComb(ep, idx << 9, 8);
+    [Util setComb:ep i:(idx<<9) m:8];
 }
 
 /**
@@ -363,11 +363,10 @@ CubieCube* temps = nil; //If you can do that, that is.
         sum += co[i];
     if (sum % 3 != 0)
         return -5;// twisted corner
-    if ((getNParity(getNPerm(ep, 12), 12) ^ getNParity([self CPerm], 8)) != 0)
+    if (([Util getNParity:[Util getNPerm:ep n:12] n:12] ^ [Util getNParity:[self getCPerm] n:8]) != 0)
         return -6;// parity error
     return 0;// cube ok
 }
-
 
 // ******************** Initialization functions ********************
 
@@ -483,7 +482,7 @@ CubieCube* temps = nil; //If you can do that, that is.
             [c setFlip:i];
             for (int s=0; s<16; s+=2) {
                 [CubieCube EdgeConjugate:c idx:s cubeB:d];
-                int idx = d.flip; //idx isn't getting its correct value because d differs
+                int idx = [d getFlip]; //idx isn't getting its correct value because d differs
                 if (idx == i) {
                     SymStateFlip[count] |= 1 << (s >> 1);
                 }
@@ -506,7 +505,7 @@ CubieCube* temps = nil; //If you can do that, that is.
             c.twist = i;
             for (int s=0; s<16; s+=2) {
                 [CubieCube CornConjugate:c idx:s cubeB:d];
-                int idx = d.twist;
+                int idx = [d getTwist];
                 if (idx == i) {
                     SymStateTwist[count] |= 1 << (s >> 1);
                 }
@@ -530,13 +529,13 @@ CubieCube* temps = nil; //If you can do that, that is.
             [c setEPerm:i];
             for (int s=0; s<16; s++) {
                 [CubieCube EdgeConjugate:c idx:s cubeB:d];
-                int idx = d.EPerm;
+                int idx = [d getEPerm];
                 if (idx == i) {
                     SymStatePerm[count] |= 1 << s;
                 }
                 occ[idx>>5] |= 1<<(idx&0x1f);
-                int a = d.U4Comb;
-                int b = d.D4Comb >> 9;
+                int a = [d getU4Comb];
+                int b = [d getD4Comb] >> 9;
                 int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + b * 1680;
                 MtoEPerm[m] = EPermR2S[idx] = count << 4 | s;
             }

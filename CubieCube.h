@@ -4,7 +4,7 @@
 //
 //  Adapted from Shuang Chen's min2phase implementation of the Kociemba algorithm, as obtained from https://github.com/ChenShuang/min2phase
 //
-//  Copyright (c) 2011, Shuang Chen
+//  Copyright (c) 2013, Shuang Chen
 //  All rights reserved.
 //  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -17,9 +17,10 @@
 #import <Foundation/Foundation.h>
 
 @interface CubieCube : NSObject {
-@public //Terrible idea. Let's do it!
+@public
     int eo[12], ep[12], co[8], cp[8];
 }
+
 +(NSMutableArray*)moveCube;
 
 +(void) CornMult:(CubieCube*)a cubeB:(CubieCube*)b cubeProd:(CubieCube*)prod;
@@ -31,15 +32,27 @@
 -(id)initCubie:(int)cperm twist:(int)twist eperm:(int)eperm flip:(int)flip;
 -(int) verify;
 -(void)URFConjugate;
--(void)invCubieCube;
+-(void) invCubieCube;
+
+-(void) setFlip: (int)idx;
+-(int) getFlipSym;
+-(void) setTwist:(int)idx;
+-(int) getTwistSym;
+-(int) getUDSlice;
+-(void) setUDSlice:(int)idx;
+-(int) getU4Comb;
+-(int) getD4Comb;
+
+-(void) setCPerm:(int) idx;
+-(int) getCPermSym;
+-(void) setEPerm:(int) idx;
+-(int) getEPermSym;
+-(int) getMPerm;
+-(void) setMPerm:(int) idx;
 
 +(void) initMove;
 +(void) initSym;
 +(void) initFlipSym2Raw;
 +(void) initTwistSym2Raw;
 +(void) initPermSym2Raw;
-
-@property (nonatomic) int UDSlice, flip, flipSym, twist, twistSym, CPerm, CPermSym, EPerm, EPermSym, MPerm, MPermSym;
-
-@property (nonatomic, readonly) int U4Comb, D4Comb;
 @end
